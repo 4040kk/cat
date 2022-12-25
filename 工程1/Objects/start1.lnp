@@ -1,0 +1,12 @@
+".\Objects\Time0.obj",
+".\Objects\STARTUP.obj",
+".\Objects\shuma.obj",
+".\Objects\drive.obj",
+".\Objects\main.obj",
+".\Objects\KEY.obj",
+".\Objects\LCD1602.obj",
+".\Objects\xpt2046.obj",
+".\Objects\ired.obj" 
+TO ".\Objects\start1" 
+PRINT(".\Listings\start1.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 
