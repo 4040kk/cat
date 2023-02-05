@@ -1,0 +1,10 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\UR_com.obj",
+".\Objects\drive.obj",
+".\Objects\UR0_com.obj",
+".\Objects\CSB.obj",
+".\Objects\ADC.obj" 
+TO ".\Objects\cat" 
+PRINT(".\Listings\cat.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 
