@@ -1,0 +1,223 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              02/05/2023 15:12:21 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include <math.h>
+   3          #include "drive.h"
+*** WARNING C245 IN LINE 1 OF drive.h: unknown #pragma, line ignored
+   4          #include "UR0_com.h"
+*** WARNING C245 IN LINE 1 OF UR0_com.h: unknown #pragma, line ignored
+   5          #include "oled.h"
+   6          #include "bmp.h"
+   7          #include "ADC.h"
+*** WARNING C245 IN LINE 1 OF ADC.h: unknown #pragma, line ignored
+   8          #include "UR_com.h"
+*** WARNING C245 IN LINE 1 OF UR_com.h: unknown #pragma, line ignored
+   9          sbit SW2=P0^0;
+  10          sbit SW3=P0^1;
+  11          sbit beep=P4^7;
+  12          void draw_wait(u8 x);
+  13          void init();
+  14          void Timer0Init(void)   //100us@22.1184MHz
+  15          {
+  16   1        AUXR &= 0x7F;   //?????12T??
+  17   1        TMOD &= 0xF0;   //???????
+  18   1        TL0 = 0x44;   //???????
+  19   1        TH0 = 0xFF;   //???????
+  20   1        TF0 = 0;    //??TF0??
+  21   1        TR0 = 1;    //???0????  
+  22   1        EA=1;
+  23   1        ES=1;
+  24   1        ET0=1;
+  25   1        PT0=1;
+  26   1      }
+  27          u8 RY,RX,LY,LX;
+  28          int T=0;
+  29          bit sw=1;
+  30          void Time0_R() interrupt 1
+  31          {     TL0 = 0x44;   //???????
+  32   1            TH0 = 0xFF;   //???????
+  33   1            T++;
+  34   1            if(T%1000==0){
+  35   2            RX= (ADC_GetNum(PRX)*0.016);
+  36   2            RY=7-(ADC_GetNum(PRY)*0.024);
+  37   2            LX=(ADC_GetNum(PLX)*0.016);
+  38   2            }
+  39   1            if(RX==2){sw=1;}
+  40   1            T%=10000;
+  41   1            
+  42   1      }
+  43          
+  44          char meg[4]="0000";
+  45          bit one=0;
+  46          int js=2;
+  47          u8 dw=0;
+  48          u8 stations =0;
+  49          char cj=0;
+  50          char yd=0;
+C51 COMPILER V9.60.0.0   MAIN                                                              02/05/2023 15:12:21 PAGE 2   
+
+  51          u8 angle=0;
+  52          bit connect=0;
+  53          int main(){
+  54   1        beep=0;
+  55   1        delay(100);
+  56   1        beep=1;
+  57   1        init();
+  58   1        while(1){
+  59   2      
+  60   2          if(stations==0){
+  61   3            one=1; 
+  62   3            if(js>6||js<2){js=2;}
+  63   3            if(T%10==0){
+  64   4              OLED_DrawBMP(0, 0,20, 1,BMP3);
+  65   4            if(connect){OLED_DrawBMP(118, 0,127, 1,BMP6);SendString("AT+CIPSTART=\"TCP\",\"192.168.4.1\",8080");}
+  66   4            OLED_DrawBMP(0, 1,128, 8,BMP1);
+  67   4            OLED_DrawBMP(110, js,128, js+2,BMP2); 
+  68   4            }
+  69   3              
+  70   3            if(js==4&&RX==4){OLED_Clear();stations=1;}
+  71   3            if(js==2&&RX==4){stations=2;T=0;}
+  72   3            if(js==6&&RX==4){stations=3;T=0;}
+  73   3            if(RY>4){delay(5);js-=2;one=1;}
+  74   3            if(RY<2){delay(5);js+=2;one=1;}
+  75   3              if(SW2==0){
+  76   4                delay(100);
+  77   4                while(SW2==0);
+  78   4                js++;}
+  79   3          }
+  80   2          
+  81   2          if(stations==1){//control
+  82   3            if(one){
+  83   4            OLED_Clear();
+  84   4            one=0;
+  85   4            T=0;
+  86   4            OLED_DrawBMP(52, 0,68, 2,Control);
+  87   4            }
+  88   3            if(T%5==0){
+  89   4            OLED_DrawBMP(cj, 2,cj+15, 3,CAT);
+  90   4            OLED_DrawBMP(46-yd, 0,51-yd, 2,ZWIFI);
+  91   4            OLED_DrawBMP(69+yd, 0,74+yd, 2,RWIFI);
+  92   4            yd++;
+  93   4            cj++;
+  94   4            if(cj+15>125){OLED_DrawBMP(cj, 2,cj+15, 3,CAT0);cj=0;};
+  95   4            if(69+yd>120){yd=0;}
+  96   4            } 
+  97   3              if(T%10==0&&connect==1){
+  98   4              SendString("AT+CIPSEND=4");
+  99   4                delay(40);
+ 100   4              SendString(meg);
+ 101   4              }   
+ 102   3              if(SW2==0){
+ 103   4              delay(100);
+ 104   4              while(SW2==0);
+ 105   4              OLED_Clear(); 
+ 106   4              stations=0;}
+ 107   3              
+ 108   3              if(T%20==0){OLED_ShowNum(42,4,dw,5,8);}
+ 109   3              if(T%25==0){OLED_ShowNum(42,5,RX,5,8);}
+ 110   3              if(T%30==0){OLED_ShowNum(42,6,LX,5,8);}
+ 111   3              if(T%10==0){
+ 112   4              if(RX>2&&sw==1){sw=0;dw-=1;}
+C51 COMPILER V9.60.0.0   MAIN                                                              02/05/2023 15:12:21 PAGE 3   
+
+ 113   4              if(RX<2&&sw==1){sw=0;dw+=1;}
+ 114   4              if(dw<3||dw>6){dw=3;}
+ 115   4              }
+ 116   3                
+ 117   3                if(RY==3){meg[3]='0';}else{ meg[3]=dw+48;}
+ 118   3                if(RY<3){ meg[2]='1';}else{ meg[2]='0';}
+ 119   3                if(LX>2){ meg[1]='2';}
+ 120   3                if(LX==2){meg[1]='0';}
+ 121   3                if(LX<2){ meg[1]='1';}
+ 122   3                
+ 123   3          }
+ 124   2          
+ 125   2          if(stations==2){
+ 126   3            delay(500);
+ 127   3            if(one){
+ 128   4            OLED_Clear(); 
+ 129   4            one=0;
+ 130   4            SendString("AT+CWJAP=\"ESP8266\",\"55555555\"");
+ 131   4            }
+ 132   3            draw_wait(4);
+ 133   3            stations=0;
+ 134   3          }
+ 135   2          
+ 136   2          if(stations==3){
+ 137   3            if(one){
+ 138   4            draw_wait(1);
+ 139   4            OLED_Clear(); 
+ 140   4            one=0;
+ 141   4            T=0;
+ 142   4            }
+ 143   3            if(!connect){SendString("AT+CWJAP=\"ESP8266\",\"55555555\"");draw_wait(4);}
+ 144   3            if(connect) {SendString("AT+CIPSTART=\"TCP\",\"192.168.4.1\",8080");}else{stations=0;return;}
+ 145   3            delay(1000);
+ 146   3            SendString("AT+CIPSEND=4");
+ 147   3            delay(40);
+ 148   3            SendString("0300"); 
+ 149   3            while(1){
+ 150   4              T=0;
+ 151   4              draw_wait(1);
+ 152   4              if(stations==0){OLED_Clear(); break;}
+ 153   4            }
+ 154   3            }
+ 155   2          }
+ 156   1      }
+ 157          
+ 158          void draw_wait(u8 x){
+ 159   1          while(1){
+ 160   2            angle++;if(angle>=360){angle=0;}
+ 161   2            switch(x){
+ 162   3              case 1: cj= 20*cos(angle)+65;yd= 20*sin(angle)+40; break;
+ 163   3              case 2: cj= cos(angle)*20*(1-sin(angle))+60;  yd=sin(angle)*20*(1-sin(angle))+50;break;
+ 164   3              case 3: cj=20 * (sin(angle))*(sin(angle))*(sin(angle))+65;  yd=16 * cos(angle)-5*cos(2*angle)-2*cos(3*a
+             -ngle)-cos(4*angle)+30;break;
+ 165   3              case 4: cj= 20*cos(angle)+65; yd=  20*sin(angle)+40; break;
+ 166   3            }
+ 167   2                DrawP(128-cj,64-yd);
+ 168   2                if(T%1200==0&&x<4) { cj=0; yd=0;break;}
+ 169   2                if(GetWIFI()&&x==4){  OLED_Clear();connect=1; return; }
+ 170   2                if(T%5000==0&&x>3){ OLED_Clear();return;}
+ 171   2                if(SW2==0){
+ 172   3                  while(SW2==0);
+ 173   3                  OLED_Clear(); 
+C51 COMPILER V9.60.0.0   MAIN                                                              02/05/2023 15:12:21 PAGE 4   
+
+ 174   3                  stations=0; 
+ 175   3                  break;
+ 176   3                }
+ 177   2        }
+ 178   1      }
+ 179          void init(){
+ 180   1        Timer0Init(); 
+ 181   1        OLED_Init();
+ 182   1        OLED_Clear();
+ 183   1        draw_wait(1);
+ 184   1        UartInit0();
+ 185   1        UartInit();
+ 186   1        OLED_Clear();
+ 187   1      }
+*** WARNING C290 IN LINE 156 OF main.c: missing return value
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1877    ----
+   CONSTANT SIZE    =   1168    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     17       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      3    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  5 WARNING(S),  0 ERROR(S)

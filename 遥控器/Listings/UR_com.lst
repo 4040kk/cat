@@ -1,0 +1,105 @@
+C51 COMPILER V9.60.0.0   UR_COM                                                            02/05/2023 14:15:01 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE UR_COM
+OBJECT MODULE PLACED IN .\Objects\UR_com.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE UR_com.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\UR
+                    -_com.lst) TABS(2) OBJECT(.\Objects\UR_com.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "UR_com.h"
+*** WARNING C245 IN LINE 1 OF UR_com.h: unknown #pragma, line ignored
+   3           u8 UR_com_GetByte(){
+   4   1          while(!(S2CON&0x01)){};
+   5   1         
+   6   1          return S2BUF;
+   7   1      }
+   8          void UartInit(void)   //4800bps@1MHz
+   9          {
+  10   1      
+  11   1        S2CON = 0x50;   //8位数据,可变波特率
+  12   1        AUXR &= 0xFB;   //定时器时钟12T模式
+  13   1        T2L = 0xE8;   //设置定时初始值
+  14   1        T2H = 0xFF;   //设置定时初始值
+  15   1        AUXR |= 0x10;   //定时器2开始计时
+  16   1        EA=1;
+  17   1        IE2&=0xFE;
+  18   1        IE2|= 0X01;
+  19   1        ES=1;
+  20   1      }
+  21          void SendChar(unsigned char Char)
+  22          { 
+  23   1          S2BUF=Char;
+  24   1          while(!(S2CON&0x02)){};
+  25   1          S2CON&=0xFD;
+  26   1      }
+  27           
+  28          void  SendString(unsigned char *p)
+  29          {
+  30   1        while(*p)
+  31   1        {
+  32   2          SendChar(*p);
+  33   2          
+  34   2        //dlay(10);
+  35   2          p++;
+  36   2        }
+  37   1        SendChar(0x0D);
+  38   1        //dlay(10);
+  39   1        SendChar(0x0A);
+  40   1      }
+  41          
+  42          unsigned char sr;
+  43            u8 UR_BUF[10];
+  44            u8 i;
+  45            u8 UR_OA=0; 
+  46             UR_DAT[10]={0};
+  47            u8 UR_flag=0;
+  48          void UR_com__Rountine() interrupt 8 using 2
+  49          {
+  50   1          if(S2CON&0X01)               //判断串口接收标志位
+  51   1          {
+  52   2              S2CON&=0xFE;      
+  53   2              sr=S2BUF;     
+C51 COMPILER V9.60.0.0   UR_COM                                                            02/05/2023 14:15:01 PAGE 2   
+
+  54   2            //接收冒号以后的数据
+  55   2            if(UR_OA==2){//结束
+  56   3            for(i=0;i<UR_OA;i++){
+  57   4                UR_DAT[i]=UR_BUF[i];
+  58   4            }
+  59   3            UR_OA=0;
+  60   3            UR_flag=1;
+  61   3            }
+  62   2            
+  63   2            if(sr==75&&UR_OA==1){UR_BUF[UR_OA]=sr;UR_OA=2;} 
+  64   2            if(sr==79){UR_BUF[UR_OA]=sr;UR_OA=1;}     
+  65   2          }
+  66   1        
+  67   1          
+  68   1      }
+  69          
+  70          bit GetWIFI(){
+  71   1        if(UR_flag){
+  72   2          
+  73   2        return 1;
+  74   2        UR_flag=0;
+  75   2        }
+  76   1        return 0;
+  77   1      }
+*** WARNING C294 IN LINE 74 OF UR_com.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    189    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     34    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  2 WARNING(S),  0 ERROR(S)

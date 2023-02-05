@@ -1,0 +1,9 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\UR0_com.obj",
+".\Objects\drive.obj",
+".\Objects\oled.obj",
+".\Objects\ADC.obj",
+".\Objects\UR_com.obj" 
+TO ".\Objects\Ò£¿ØÆ÷" 
+PRINT(".\Listings\Ò£¿ØÆ÷.m51") RAMSIZE(256) 
