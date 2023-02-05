@@ -1,0 +1,223 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              01/29/2023 13:51:12 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE main.c OPTIMIZE(9,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main
+                    -.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <STC15F2K60S2.H>
+   2          #include "UR_com.h"
+*** WARNING C245 IN LINE 1 OF UR_com.h: unknown #pragma, line ignored
+   3          #include "UR0_com.h"
+*** WARNING C245 IN LINE 1 OF UR0_com.h: unknown #pragma, line ignored
+   4          #include "header.h"
+*** WARNING C245 IN LINE 1 OF header.h: unknown #pragma, line ignored
+   5          #include "CSB.h"
+   6          #include "ADC.h"
+*** WARNING C245 IN LINE 1 OF ADC.h: unknown #pragma, line ignored
+   7          sbit FDZ=P2^2;
+   8          sbit FDY=P2^3;
+   9          sbit FDC_1=P2^5;
+  10          sbit FDC_2=P2^6;
+  11          sbit FDC_3=P2^7;
+  12          sbit FDC_4=P4^5;
+  13          sbit DJ=P5^5;
+  14          sbit beep=P4^6;
+  15          
+  16          sbit SJ1=P4^3;
+  17          sbit SJ2=P4^4;
+  18          sbit SJ3=P2^0;
+  19          
+  20          sbit SW4=P1^3;
+  21          u8 t=0;
+  22          u8 v1,v2;
+  23          int T0=0;
+  24          void Timer0Init(void)   //100微秒@11.0592MHz
+  25          {
+  26   1        TMOD |= 0x01;   //设置定时器模式
+  27   1        TL0 = 0xA4;   //设置定时初值
+  28   1        TH0 = 0xFF;   //设置定时初值
+  29   1        TF0 = 0;    //清除TF0标志
+  30   1        TR0 = 1;    //定时器0开始计时
+  31   1        ET0 = 1;
+  32   1        EA=1;
+  33   1        ES=1;
+  34   1      }
+  35          void Timer0_Isr() interrupt 1
+  36          {
+  37   1        TL0 = 0xA4;   //设置定时初值
+  38   1        TH0 = 0xFF;   //设置定时初值
+  39   1        if(t<v1){FDZ=1;}else{FDZ=0;}
+  40   1        if(t<v2){FDY=1;}else{FDY=0;}
+  41   1        t++;
+  42   1        t%=110;
+  43   1        T0++;
+  44   1        T0%=15000;
+  45   1      
+  46   1      }
+  47          u8 stations;
+  48          int j=100;
+  49          u8 gw,sw,bw;
+  50          int csb=100;
+C51 COMPILER V9.60.0.0   MAIN                                                              01/29/2023 13:51:12 PAGE 2   
+
+  51          u8 csb_cs=0;
+  52          int main(){
+  53   1        
+  54   1        //UartInit0();
+  55   1        Timer0Init();
+  56   1        //SendString0("OKKKKKKKKKK");
+  57   1        v1=0;v2=0;
+  58   1        FDC_1=1;FDC_2=0;FDC_3=1;FDC_4=0;
+  59   1        gw=0;sw=0;bw=0;
+  60   1        stations=0;
+  61   1      while(1){ 
+  62   2          
+  63   2       if(stations==0){
+  64   3           if(P07==0){
+  65   4             UartInit();
+  66   4             dlay(2000);
+  67   4            SendString("AT+CIPMUX=1");
+  68   4             dlay(1000);
+  69   4            SendString("AT+CIPSERVER=1,8080");
+  70   4           }
+  71   3           if(SW4==0){
+  72   4             dlay(2000);
+  73   4             while(SW4==0);
+  74   4             beep=0;
+  75   4             dlay(1000);
+  76   4             beep=1;
+  77   4             while(1){
+  78   5             findload();
+  79   5               if(SW4==0){
+  80   6                  beep=0;
+  81   6                  dlay(1000);
+  82   6                  beep=1;
+  83   6                  break;
+  84   6               }
+  85   5             }
+  86   4           }
+  87   3           /////////////////////////////////////////////////    
+  88   3            if(T0%300==0){      
+  89   4              //j=CSB_Getnum();
+  90   4              //j=ADC_GetNum()*0.196;
+  91   4              j=UR_Getnum();
+  92   4              gw=j%10;
+  93   4              sw=(j / 10) % 10;
+  94   4              bw=j/100;
+  95   4              if(sw==1){FDC_1=0;FDC_2=1;FDC_3=0;FDC_4=1;}else{FDC_1=1;FDC_2=0;FDC_3=1;FDC_4=0;}
+  96   4            }   
+  97   3           ///////////////////////////////////////////////////          
+  98   3      //       if(T0%4000==0){
+  99   3      //         SendString0("num="); 
+ 100   3      //        SendChar0(bw+48);
+ 101   3      //        SendChar0(sw+48);
+ 102   3      //        SendChar0(gw+48);      
+ 103   3      //        SendChar0(0x0D);SendChar0(0x0A);}
+ 104   3           ////////////////////////////////////////////////// 
+ 105   3            if(T0%1000==0){ 
+ 106   4              csb=CSB_Getnum();
+ 107   4              //j=CSB_Getnum();
+ 108   4              CSB_Onece();
+ 109   4              if(csb<40&csb_cs==0){ csb_cs++;}else csb_cs==0;
+*** WARNING C275 IN LINE 109 OF main.c: expression with possibly no effect
+ 110   4              if(csb<40&csb_cs==1){ csb_cs++;}else csb_cs==0;
+*** WARNING C275 IN LINE 110 OF main.c: expression with possibly no effect
+C51 COMPILER V9.60.0.0   MAIN                                                              01/29/2023 13:51:12 PAGE 3   
+
+ 111   4              if(csb<40&csb_cs==2){ csb_cs++;}else csb_cs==0;
+*** WARNING C275 IN LINE 111 OF main.c: expression with possibly no effect
+ 112   4              if(csb_cs==3&csb<40){
+ 113   5              csb_cs=0;
+ 114   5              FDC_1=0;FDC_2=1;FDC_3=0;FDC_4=1;    
+ 115   5              stations=1;}
+ 116   4              else {csb_cs==0;}
+*** WARNING C275 IN LINE 116 OF main.c: expression with possibly no effect
+ 117   4            }
+ 118   3            
+ 119   3          /////////////////////////////////////////////////////////   
+ 120   3            if(gw==0){v1=0;v2=v1;}
+ 121   3            if(gw!=0&&gw<=3){v1=20;v2=v1;}
+ 122   3            switch(gw){
+ 123   4              case 4: v1=40;v2=v1; break;
+ 124   4              case 5: v1=60;v2=v1; break;
+ 125   4              case 6: v1=100;v2=v1; break;
+ 126   4              default:;
+ 127   4            }
+ 128   3            switch(bw){
+ 129   4              case 3:   stations=2; break;
+ 130   4              case 1:  if(gw<=4){v1=50; v2=25;}else{FDC_1=1;FDC_2=0;FDC_3=0;FDC_4=1;v1=60; v2=60;}break;
+ 131   4              case 2: if(gw<=4){v2=50; v1=25;}else{FDC_1=0;FDC_2=1;FDC_3=1;FDC_4=0; v2=60; v1=60;}break;
+ 132   4              default: v1=v2; 
+ 133   4            }
+ 134   3            
+ 135   3            
+ 136   3                                    }
+ 137   2       
+ 138   2          if(stations==1){  
+ 139   3              v1=30;v2=30;
+ 140   3              beep=0;
+ 141   3              if(T0%300==0){
+ 142   4                CSB_Onece();
+ 143   4                csb=CSB_Getnum();
+ 144   4              }       
+ 145   3              if(csb>60&csb_cs==0){ csb_cs++;}else csb_cs==0;
+*** WARNING C275 IN LINE 145 OF main.c: expression with possibly no effect
+ 146   3              if(csb_cs==1&csb>60){csb_cs++;}else csb_cs==0;
+*** WARNING C275 IN LINE 146 OF main.c: expression with possibly no effect
+ 147   3              if(csb_cs==2&csb>60){csb_cs=0;FDC_1=1;FDC_2=0;FDC_3=1;FDC_4=0;stations=0;beep=1;}else csb_cs==0;
+*** WARNING C275 IN LINE 147 OF main.c: expression with possibly no effect
+ 148   3          }
+ 149   2          
+ 150   2          if(stations==2){
+ 151   3            
+ 152   3              if(T0%1000==0){
+ 153   4                  j=UR_Getnum();
+ 154   4                  bw=j/100;
+ 155   4                  if(bw==0){stations=0;}
+ 156   4              }
+ 157   3             findload();
+ 158   3          }
+ 159   2          
+ 160   2          
+ 161   2            
+ 162   2          }
+ 163   1      }
+ 164              void findload(){
+ 165   1          
+ 166   1                FDC_1=1;FDC_2=0;FDC_3=1;FDC_4=0;
+ 167   1            if(SJ2==1){
+C51 COMPILER V9.60.0.0   MAIN                                                              01/29/2023 13:51:12 PAGE 4   
+
+ 168   2            v1=30;v2=30;
+ 169   2            if(SJ2==1&&SJ3==1){return;} 
+ 170   2            if(SJ1==1){dlay(500); while(SJ2==0){FDC_1=0;FDC_2=1;FDC_3=1;FDC_4=0;v2=37; v1=37;}  v1=0;v2=0;dlay(500);
+             -  }  
+ 171   2            if(SJ3==1){dlay(500); while(SJ2==0){FDC_1=1;FDC_2=0;FDC_3=0;FDC_4=1;v1=37; v2=37;}  v1=0;v2=0;dlay(500);
+             -  }  
+ 172   2            //SendString0("1");
+ 173   2            }else{
+ 174   2            v1=30;v2=30;
+ 175   2            if(SJ1==1){dlay(100); while(SJ2==0){FDC_1=0;FDC_2=1;FDC_3=1;FDC_4=0;v2=28; v1=28;}  v1=0;v2=0;dlay(100);
+             -  }  
+ 176   2            if(SJ3==1){dlay(100); while(SJ2==0){FDC_1=1;FDC_2=0;FDC_3=0;FDC_4=1;v1=28; v2=28;}  v1=0;v2=0;dlay(100);
+             -  }  
+ 177   2            }
+ 178   1          }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    990    ----
+   CONSTANT SIZE    =     32    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     14    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  11 WARNING(S),  0 ERROR(S)
